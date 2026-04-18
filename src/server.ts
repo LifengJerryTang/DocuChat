@@ -2,7 +2,10 @@ import express, { Request, Response, NextFunction } from 'express';
 import { config } from './config';
 import { logger } from './logger';
 import authRoutes from './routes/auth';
+import documentRoutes from './routes/documents';
+import conversationRoutes from './routes/conversations';
 import './events/auth.events'; // registers all listeners on startup
+import { prisma } from './lib/prisma';
 
 
 const app = express();
@@ -20,13 +23,18 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
-    status: 'ok',
-    environment: config.nodeEnv,
-    timestamp: new Date().toISOString(),
+      success: true,
+      data: {
+        status: 'ok',
+        environment: config.nodeEnv,
+        timestamp: new Date().toISOString(),
+      },
   });
 });
 
-app.use('/api/auth', authRoutes);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/documents', documentRoutes);
+app.use('/api/v1/conversations', conversationRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
@@ -48,8 +56,9 @@ const server = app.listen(config.port, () => {
 const shutdown = async (signal: string) => {
   logger.info(`${signal} received — shutting down gracefully`);
   // TODO (Day 2): await prisma.$disconnect();
-  server.close(() => {
+  server.close(async () => {
     logger.info('Server closed');
+    await prisma.$disconnect()
     process.exit(0);
   });
 };
