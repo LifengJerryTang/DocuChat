@@ -1,6 +1,8 @@
 import { prisma } from '../lib/prisma';
 import { hashPassword, verifyPassword } from '../lib/password';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../lib/tokens';
+import { appEvents } from '../lib/events';
+import { AUTH_EVENTS } from '../events/auth.events';
 import crypto from 'crypto';
 
 export async function register(data: { email: string; password: string }) {
@@ -22,6 +24,12 @@ export async function register(data: { email: string; password: string }) {
         },
     });
 
+    appEvents.emit(AUTH_EVENTS.USER_REGISTERED, {
+        id: user.id,
+        email: user.email,
+        tier: user.tier,
+    });
+
     // Never return the hash — only return safe fields
     return { id: user.id, email: user.email, tier: user.tier };
 }
@@ -39,12 +47,22 @@ export async function login(data: {
     // IMPORTANT: same error for wrong email AND wrong password
     // This prevents "user enumeration" — attackers fishing for valid emails
     if (!user || !user.isActive) {
+        appEvents.emit(AUTH_EVENTS.LOGIN_FAILED, {
+            email: data.email,
+            deviceInfo: data.deviceInfo,
+            reason: 'user_not_found', 
+        });
         throw new Error('Invalid credentials');
     }
 
     const valid = await verifyPassword(data.password, user.passwordHash);
 
     if (!valid) {
+        appEvents.emit(AUTH_EVENTS.LOGIN_FAILED, {
+            email: data.email,
+            deviceInfo: data.deviceInfo,
+            reason: 'wrong_password', 
+        });
         throw new Error('Invalid credentials');
     }
 
@@ -60,6 +78,11 @@ export async function login(data: {
         token: tokenHash,
         expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
         },
+    });
+
+    appEvents.emit(AUTH_EVENTS.USER_LOGGED_IN, {
+        userId: user.id,
+        deviceInfo: data.deviceInfo,
     });
 
     return {
