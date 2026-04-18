@@ -39,11 +39,9 @@ router.use(authenticate);
  */
 router.get('/', validate(listDocumentsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { page, limit, status } = req.query as unknown as {
-        page: number;
-        limit: number;
-        status?: string;
-    };
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+    const status = req.query.status as string | undefined;
 
     const where = {
       userId: req.user!.id,

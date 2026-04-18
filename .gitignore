@@ -10,6 +10,8 @@ dist/
 # SQLite database files (never commit these)
 prisma/dev.db
 prisma/dev.db-journal
+*.db
+*.db-journal
 
 # TypeScript cache
 *.tsbuildinfo

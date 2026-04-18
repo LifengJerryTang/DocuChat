@@ -33,7 +33,8 @@ export function validate(schema: RequestSchema) {
     }
 
     if (result.data.body !== undefined) req.body = result.data.body;
-    if (result.data.query !== undefined) req.query = result.data.query as any;
+    // Note: req.query is read-only in Express 5 — parsed values are accessed
+    // directly from req.query; we don't reassign it.
     if (result.data.params !== undefined) req.params = result.data.params as any;
 
     next();
