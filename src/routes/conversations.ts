@@ -28,7 +28,7 @@ router.use(authenticate);
  *       401:
  *         description: Unauthorized
  */
-router.get('/', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/',  validate(conversationParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const conversations = await prisma.conversation.findMany({
       where: { userId: req.user!.id },

@@ -8,6 +8,7 @@ import './events/auth.events'; // registers all listeners on startup
 import { prisma } from './lib/prisma';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
+import { errorHandler } from './middleware/errorHandler';
 
 
 const app = express();
@@ -44,15 +45,15 @@ app.get('/api-docs.json', (_req: Request, res: Response) => {
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not found' });
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    error: { code: 'NOT_FOUND', message: `Route ${req.path} not found` },
+  });
 });
 
-// ── Global error handler ──────────────────────────────────────────────────────
-app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-  logger.error('Unhandled error', { message: err.message, stack: err.stack });
-  res.status(500).json({ error: 'Internal server error' });
-});
+// ── Global error handler (must be last) ──────────────────────────────────────
+app.use(errorHandler);
 
 // ── Start server ──────────────────────────────────────────────────────────────
 const server = app.listen(config.port, () => {
