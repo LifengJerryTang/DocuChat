@@ -1,6 +1,9 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { config } from './config';
 import { logger } from './logger';
+import authRoutes from './routes/auth';
+import './events/auth.events'; // registers all listeners on startup
+
 
 const app = express();
 
@@ -22,6 +25,8 @@ app.get('/health', (_req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+app.use('/api/auth', authRoutes);
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {
