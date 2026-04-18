@@ -13,10 +13,32 @@ const router = Router();
 // All document routes require authentication
 router.use(authenticate);
 
-// ── GET /api/v1/documents ─────────────────────────────────────────────────────
+/**
+ * @openapi
+ * /documents:
+ *   get:
+ *     summary: List all documents for the authenticated user
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *       - in: query
+ *         name: status
+ *         schema: { type: string, enum: [pending, processing, ready, failed] }
+ *     responses:
+ *       200:
+ *         description: Paginated list of documents
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/', validate(listDocumentsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    
     const { page, limit, status } = req.query as unknown as {
         page: number;
         limit: number;
@@ -63,7 +85,39 @@ router.get('/', validate(listDocumentsSchema), async (req: Request, res: Respons
   }
 });
 
-// ── POST /api/v1/documents ────────────────────────────────────────────────────
+/**
+ * @openapi
+ * /documents:
+ *   post:
+ *     summary: Create (upload) a new document
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [title, content]
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: My Research Notes
+ *               content:
+ *                 type: string
+ *                 example: Lorem ipsum...
+ *               mimeType:
+ *                 type: string
+ *                 example: text/plain
+ *     responses:
+ *       201:
+ *         description: Document created with status "pending"
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ */
 router.post('/', validate(createDocumentSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, content, mimeType } = req.body;
@@ -89,7 +143,28 @@ router.post('/', validate(createDocumentSchema), async (req: Request, res: Respo
   }
 });
 
-// ── GET /api/v1/documents/:id ─────────────────────────────────────────────────
+/**
+ * @openapi
+ * /documents/{id}:
+ *   get:
+ *     summary: Get a single document by ID
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Document UUID
+ *     responses:
+ *       200:
+ *         description: Document object
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Document not found
+ */
 router.get('/:id', validate(documentParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const document = await prisma.document.findFirst({
@@ -112,7 +187,28 @@ router.get('/:id', validate(documentParamsSchema), async (req: Request, res: Res
   }
 });
 
-// ── DELETE /api/v1/documents/:id ──────────────────────────────────────────────
+/**
+ * @openapi
+ * /documents/{id}:
+ *   delete:
+ *     summary: Delete a document and all its chunks
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Document UUID
+ *     responses:
+ *       200:
+ *         description: Document deleted
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Document not found
+ */
 router.delete('/:id', validate(documentParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const document = await prisma.document.findFirst({

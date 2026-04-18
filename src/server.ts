@@ -6,6 +6,8 @@ import documentRoutes from './routes/documents';
 import conversationRoutes from './routes/conversations';
 import './events/auth.events'; // registers all listeners on startup
 import { prisma } from './lib/prisma';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './config/swagger';
 
 
 const app = express();
@@ -35,6 +37,11 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/documents', documentRoutes);
 app.use('/api/v1/conversations', conversationRoutes);
+app.get('/api-docs.json', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((_req: Request, res: Response) => {

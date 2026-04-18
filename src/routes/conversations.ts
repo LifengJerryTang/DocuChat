@@ -14,7 +14,20 @@ const router = Router();
 // All conversation routes require authentication
 router.use(authenticate);
 
-// ── GET /api/v1/conversations ─────────────────────────────────────────────────
+/**
+ * @openapi
+ * /conversations:
+ *   get:
+ *     summary: List all conversations for the authenticated user
+ *     tags: [Conversations]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Array of conversations with message count
+ *       401:
+ *         description: Unauthorized
+ */
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const conversations = await prisma.conversation.findMany({
@@ -35,7 +48,36 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   }
 });
 
-// ── POST /api/v1/conversations ────────────────────────────────────────────────
+/**
+ * @openapi
+ * /conversations:
+ *   post:
+ *     summary: Start a new conversation
+ *     tags: [Conversations]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 example: Questions about Q3 Report
+ *               documentId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: 550e8400-e29b-41d4-a716-446655440003
+ *     responses:
+ *       201:
+ *         description: Conversation created
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Document not found
+ */
 router.post('/', validate(createConversationSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, documentId } = req.body;
@@ -66,7 +108,34 @@ router.post('/', validate(createConversationSchema), async (req: Request, res: R
   }
 });
 
-// ── GET /api/v1/conversations/:id/messages ────────────────────────────────────
+/**
+ * @openapi
+ * /conversations/{id}/messages:
+ *   get:
+ *     summary: Get paginated messages for a conversation
+ *     tags: [Conversations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Conversation UUID
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 50 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of messages ordered oldest-first
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Conversation not found
+ */
 router.get(
   '/:id/messages',
   validate(listMessagesSchema),
@@ -124,8 +193,45 @@ router.get(
   }
 );
 
-// ── POST /api/v1/conversations/:id/messages ───────────────────────────────────
-// Week 4 will wire this to the RAG pipeline. For now it saves the message directly.
+/**
+ * @openapi
+ * /conversations/{id}/messages:
+ *   post:
+ *     summary: Send a message to a conversation (RAG placeholder until Week 4)
+ *     tags: [Conversations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *         description: Conversation UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [content]
+ *             properties:
+ *               content:
+ *                 type: string
+ *                 example: What are the key findings in this document?
+ *               documentId:
+ *                 type: string
+ *                 format: uuid
+ *                 example: 550e8400-e29b-41d4-a716-446655440003
+ *     responses:
+ *       201:
+ *         description: User message saved and assistant placeholder returned
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Conversation not found
+ */
 router.post(
   '/:id/messages',
   validate(sendMessageSchema),
