@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { requirePermission } from '../middleware/authorize';
+
 import {
   createDocumentSchema,
   listDocumentsSchema,
@@ -37,7 +39,7 @@ router.use(authenticate);
  *       401:
  *         description: Unauthorized
  */
-router.get('/', validate(listDocumentsSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/', requirePermission('documents:read'), validate(listDocumentsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = Number(req.query.page) || 1;
     const limit = Number(req.query.limit) || 20;
@@ -116,7 +118,7 @@ router.get('/', validate(listDocumentsSchema), async (req: Request, res: Respons
  *       401:
  *         description: Unauthorized
  */
-router.post('/', validate(createDocumentSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requirePermission('documents:create'), validate(createDocumentSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, content, mimeType } = req.body;
 
@@ -163,7 +165,7 @@ router.post('/', validate(createDocumentSchema), async (req: Request, res: Respo
  *       404:
  *         description: Document not found
  */
-router.get('/:id', validate(documentParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:id', requirePermission('documents:read'), validate(documentParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const document = await prisma.document.findFirst({
       where: {
@@ -207,7 +209,7 @@ router.get('/:id', validate(documentParamsSchema), async (req: Request, res: Res
  *       404:
  *         description: Document not found
  */
-router.delete('/:id', validate(documentParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.delete('/:id', requirePermission('documents:delete'), validate(documentParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const document = await prisma.document.findFirst({
       where: { id: req.params.id as string, userId: req.user!.id },

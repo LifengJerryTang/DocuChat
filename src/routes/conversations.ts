@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { requirePermission } from '../middleware/authorize';
+
 import {
   createConversationSchema,
   conversationParamsSchema,
@@ -28,7 +30,7 @@ router.use(authenticate);
  *       401:
  *         description: Unauthorized
  */
-router.get('/',  validate(conversationParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.get('/',  requirePermission('conversations:read'), validate(conversationParamsSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const conversations = await prisma.conversation.findMany({
       where: { userId: req.user!.id },
@@ -78,7 +80,7 @@ router.get('/',  validate(conversationParamsSchema), async (req: Request, res: R
  *       404:
  *         description: Document not found
  */
-router.post('/', validate(createConversationSchema), async (req: Request, res: Response, next: NextFunction) => {
+router.post('/', requirePermission('conversations:create'), validate(createConversationSchema), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { title, documentId } = req.body;
 
@@ -138,6 +140,7 @@ router.post('/', validate(createConversationSchema), async (req: Request, res: R
  */
 router.get(
   '/:id/messages',
+  requirePermission('conversations:read'),
   validate(listMessagesSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -234,6 +237,7 @@ router.get(
  */
 router.post(
   '/:id/messages',
+  requirePermission('conversations:create'),
   validate(sendMessageSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -26,7 +26,7 @@ Upload documents, ask questions, and receive AI-generated answers with source ci
 | Week | Topic | Status |
 |---|---|---|
 | **Week 1** | Project setup, database schema, authentication, REST API, error handling, testing | ✅ Complete |
-| **Week 2** | RBAC, background jobs, external API integration, webhooks | 🔜 |
+| **Week 2** | RBAC, background jobs, external API integration, webhooks | 🚧 In Progress |
 | **Week 3** | File uploads, document processing pipeline, chunking | 🔜 |
 | **Week 4** | RAG pipeline — embeddings, vector search, LLM integration, citations | 🔜 |
 | **Week 5** | Observability, AI tracing, performance optimisation, production hardening | 🔜 |
@@ -113,6 +113,14 @@ Server at `http://localhost:3000` · Swagger docs at `http://localhost:3000/api-
 | `POST` | `/api/v1/conversations` | Start a conversation |
 | `GET` | `/api/v1/conversations/:id/messages` | Get messages |
 | `POST` | `/api/v1/conversations/:id/messages` | Send a message |
+
+### Admin *(requires `roles:manage` permission — admin only)*
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/v1/admin/roles` | List all roles with permissions and user counts |
+| `POST` | `/api/v1/admin/users/:userId/roles` | Assign a role to a user |
+| `DELETE` | `/api/v1/admin/users/:userId/roles/:roleName` | Revoke a role from a user |
 
 ### Health
 
