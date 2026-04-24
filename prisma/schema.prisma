@@ -54,6 +54,8 @@ model Document {
   chunkCount    Int      @default(0)
   status        String   @default("pending")   
   error         String?
+  deletedAt     DateTime?  // null = active, timestamp = soft-deleted
+  deletedBy     String?    // userId of who deleted it (audit trail)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

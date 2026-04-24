@@ -6,7 +6,8 @@ import documentRoutes from './routes/documents';
 import conversationRoutes from './routes/conversations';
 import adminRoutes from './routes/admin';
 import './events/admin.events';
-import './events/auth.events'; // registers all listeners on startup
+import './events/auth.events';
+import './events/document.events'; // audit trail for document create/delete
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler } from './middleware/errorHandler';
