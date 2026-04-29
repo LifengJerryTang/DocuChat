@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { requirePermission } from '../middleware/authorize';
+import { documentQueue } from '../queues/document.queue';
+import { prisma } from '../lib/prisma';
 import {
   listDocuments,
   getDocument,
@@ -108,13 +110,13 @@ router.post(
   validate(createDocumentSchema),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const document = await createDocument({
+      const { document, jobId } = await createDocument({
         userId: req.user!.id,
         title: req.body.title,
         content: req.body.content,
         mimeType: req.body.mimeType,
       });
-      res.status(201).json({ success: true, data: document });
+      res.status(202).json({ success: true, data: { document, jobId } });
     } catch (error) {
       next(error);
     }
@@ -190,5 +192,66 @@ router.delete(
     }
   }
 );
+
+/**
+ * @openapi
+ * /documents/{id}/processing-status:
+ *   get:
+ *     summary: Get processing progress for a document
+ *     tags: [Documents]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Current status and job progress (0-100)
+ *       404:
+ *         description: Document not found
+ */
+router.get(
+  '/:id/processing-status',
+  requirePermission('documents:read'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const doc = await prisma.document.findFirst({
+        where: {
+          id: req.params.id as string,
+          userId: req.user!.id,
+          deletedAt: null,
+        },
+        select: { id: true, status: true, error: true },
+      });
+
+      if (!doc) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Document not found' },
+        });
+      }
+
+      // Check for an active/waiting job — only present while the document
+      // is still being processed
+      const jobs = await documentQueue.getJobs(['active', 'waiting']);
+      const activeJob = jobs.find((j) => j.data.documentId === req.params.id);
+      const progress = activeJob ? await activeJob.progress : null;
+
+      res.json({
+        success: true,
+        data: {
+          status: doc.status,
+          error: doc.error ?? null,
+          progress,        // 0–100 while processing, null when done/not started
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 
 export default router;

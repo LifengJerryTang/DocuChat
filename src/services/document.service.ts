@@ -1,6 +1,8 @@
 import { prisma } from '../lib/prisma';
 import { NotFoundError, ForbiddenError } from '../lib/errors';
 import { appEvents } from '../lib/events';
+import { queueDocumentForProcessing } from '../queues/document.queue';
+
 
 // ── Event constants ────────────────────────────────────────────────────────────
 export const DOC_EVENTS = {
@@ -132,8 +134,12 @@ export async function createDocument(data: CreateDocumentData) {
     },
   });
 
-  // Emit audit event — the listener writes to UsageLog asynchronously.
-  // We don't await this: a logging failure must never break document creation.
+  // Queue for background processing BEFORE emitting the event.
+  // If queueing fails, we bubble the error up — no point emitting
+  // "doc:created" if the processing job was never registered.
+  const jobId = await queueDocumentForProcessing(document.id, userId);
+
+  // Emit audit event only after the queue call succeeds.
   appEvents.emit(DOC_EVENTS.CREATED, {
     userId,
     documentId: document.id,
@@ -141,7 +147,7 @@ export async function createDocument(data: CreateDocumentData) {
     fileSizeBytes: document.fileSizeBytes,
   });
 
-  return document;
+  return { document, jobId };
 }
 
 // ── deleteDocument ─────────────────────────────────────────────────────────────

@@ -5,12 +5,14 @@ import authRoutes from './routes/auth';
 import documentRoutes from './routes/documents';
 import conversationRoutes from './routes/conversations';
 import adminRoutes from './routes/admin';
+import './queues/document.worker';  
 import './events/admin.events';
 import './events/auth.events';
 import './events/document.events'; // audit trail for document create/delete
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler } from './middleware/errorHandler';
+import { bullBoardAdapter } from './config/bull-board';
 
 const app = express();
 
@@ -45,6 +47,7 @@ app.get('/api-docs.json', (_req: Request, res: Response) => {
   res.send(swaggerSpec);
 });
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/admin/queues', bullBoardAdapter.getRouter());
 
 // ── 404 handler ───────────────────────────────────────────────────────────────
 app.use((req, res) => {
