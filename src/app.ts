@@ -13,10 +13,23 @@ import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './config/swagger';
 import { errorHandler } from './middleware/errorHandler';
 import { bullBoardAdapter } from './config/bull-board';
+import webhookRoutes from './routes/webhooks';
+import { verifyWebhookSignature } from './middleware/verifyWebhook';
+
 
 const app = express();
 
 // ── Middleware ────────────────────────────────────────────────────────────────
+app.use(
+  '/webhooks',
+  verifyWebhookSignature(process.env.WEBHOOK_SECRET!, 'X-Webhook-Signature'),
+  express.raw({
+    type: 'application/json',
+    verify: (req: any, _res, buf) => { req.rawBody = buf; },
+  }),
+  webhookRoutes
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -203,3 +203,14 @@ model RolePermission {
 
   @@id([roleId, permissionId])
 }
+
+model WebhookEvent {
+  id          String    @id          // provider's event ID — primary key = unique constraint
+  provider    String
+  eventType   String
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  payload     String                 // raw JSON for debugging
+
+  @@index([provider, eventType])
+}
