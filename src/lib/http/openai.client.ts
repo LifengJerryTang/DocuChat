@@ -22,6 +22,15 @@ openaiClient.interceptors.response.use(
   (response) => {
     const duration = Date.now() - (response.config as any).metadata?.startTime;
     console.log(`← OpenAI ${response.status} ${response.config.url} (${duration}ms)`);
+
+    // Read rate limit headers and warn when budget is low
+    const remaining = parseInt(
+      response.headers['x-ratelimit-remaining-requests'] ?? '999'
+    );
+    if (remaining < 50) {
+      console.warn(`⚠️  OpenAI rate limit low: ${remaining} requests remaining`);
+    }
+
     return response;
   },
   (error: AxiosError) => {
